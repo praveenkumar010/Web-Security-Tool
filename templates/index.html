@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Cyber Security Dashboard</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body class="cyber-bg text-white min-h-screen">
+
+    <!-- NAVBAR -->
+
+    <nav class="glass border-b border-cyan-500/30 sticky top-0 z-50">
+
+        <div class="container mx-auto px-8 py-5 flex justify-between items-center">
+
+            <div>
+
+                <h1 class="text-4xl font-black tracking-widest neon-red">
+                    CYBER SECURITY
+                </h1>
+
+                <p class="text-gray-400 text-sm mt-1">
+                    Advanced Vulnerability Assessment System
+                </p>
+
+            </div>
+
+            <div class="flex items-center gap-6">
+
+                <div class="flex items-center gap-2">
+
+                    <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+
+                    <span class="text-green-400 font-bold">
+                        SYSTEM ACTIVE
+                    </span>
+
+                </div>
+
+                <a href="/logout"
+                   class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded-xl font-bold transition">
+                    Logout
+                </a>
+
+            </div>
+
+        </div>
+
+    </nav>
+
+    <!-- MAIN LAYOUT -->
+
+    <div class="container mx-auto p-8 grid grid-cols-1 xl:grid-cols-4 gap-8">
+
+        <!-- LEFT PANEL -->
+
+        <div class="xl:col-span-1 space-y-8">
+
+            <!-- SCAN BOX -->
+
+            <div class="glass rounded-3xl p-6 border border-red-500/30">
+
+                <h2 class="text-2xl font-bold mb-6 neon-red">
+                    Scan Target
+                </h2>
+
+                <input
+                    id="urlInput"
+                    type="text"
+                    placeholder="https://example.com"
+                    class="w-full p-4 rounded-2xl bg-black/50 border border-cyan-500/30 text-white outline-none focus:border-cyan-400"
+                >
+
+                <button
+                    onclick="scanWebsite()"
+                    class="w-full mt-5 cyber-btn"
+                >
+                    INITIATE SECURITY SCAN
+                </button>
+
+            </div>
+
+            <!-- THREAT ANALYTICS -->
+
+            <div class="glass rounded-3xl p-6 border border-cyan-500/30">
+
+                <h2 class="text-2xl font-bold mb-6 neon-cyan">
+                    Threat Analytics
+                </h2>
+
+                <div class="space-y-5">
+
+                    <!-- THREAT SCORE -->
+
+                    <div class="analytics-card">
+
+                        <div class="flex justify-between mb-2">
+
+                            <span class="text-gray-400">
+                                Threat Score
+                            </span>
+
+                            <span id="threatScore"
+                                  class="text-green-400 font-bold text-xl">
+                                0
+                            </span>
+
+                        </div>
+
+                        <div class="w-full bg-gray-800 rounded-full h-3">
+
+                            <div id="scoreBar"
+                                 class="h-3 rounded-full bg-green-400 transition-all duration-700"
+                                 style="width: 0%">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- VULNERABILITY COUNT -->
+
+                    <div class="analytics-card">
+
+                        <p class="text-gray-400 mb-2">
+                            Vulnerabilities Found
+                        </p>
+
+                        <h3 id="vulnCount"
+                            class="text-5xl font-black neon-red">
+                            0
+                        </h3>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- LIVE LOGS -->
+
+            <div class="glass rounded-3xl p-6 border border-green-500/30">
+
+                <h2 class="text-2xl font-bold mb-5 text-green-400">
+                    Live Scan Logs
+                </h2>
+
+                <div id="logs"
+                     class="terminal">
+
+                    <p>[SYSTEM] Waiting for scan...</p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- RIGHT PANEL -->
+
+        <div class="xl:col-span-3">
+
+            <div id="results"
+                 class="glass rounded-3xl border border-red-500/20 min-h-[850px] p-8">
+
+                <div class="flex flex-col justify-center items-center h-full">
+
+                    <div class="radar mb-10"></div>
+
+                    <h1 class="text-5xl font-black neon-red mb-5">
+                        CYBER THREAT MONITOR
+                    </h1>
+
+                    <p class="text-gray-400 text-xl">
+                        Initialize a scan to begin vulnerability assessment
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
+
