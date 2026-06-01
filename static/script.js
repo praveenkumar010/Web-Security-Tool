@@ -1,49 +1,81 @@
 async function scanWebsite() {
 
     const url =
-        document.getElementById("urlInput").value;
+        document.getElementById(
+            "urlInput"
+        ).value;
 
     if (!url) {
 
-        alert("Please enter a URL");
+        alert(
+            "Please enter a URL"
+        );
 
         return;
     }
 
     const loading =
-        document.getElementById("loading");
+        document.getElementById(
+            "loading"
+        );
 
     const results =
-        document.getElementById("results");
+        document.getElementById(
+            "results"
+        );
 
-    loading.classList.remove("hidden");
+    loading.classList.remove(
+        "hidden"
+    );
 
-    results.classList.add("hidden");
+
+    results.classList.add(
+        "hidden"
+    );
 
     try {
 
         const response =
-            await fetch("/scan", {
+            await fetch(
+                "/scan",
+                {
 
-                method: "POST",
+                    method: "POST",
 
-                headers: {
-                    "Content-Type":
-                    "application/json"
-                },
+                    headers: {
 
-                body: JSON.stringify({
-                    url: url
-                })
+                        "Content-Type":
+                        "application/json"
 
-            });
+                    },
+
+                    body: JSON.stringify({
+
+                        url: url
+
+                    })
+
+                }
+            );
 
         const data =
             await response.json();
 
-        loading.classList.add("hidden");
+        loading.classList.add(
+            "hidden"
+        );
 
-        results.classList.remove("hidden");
+        results.classList.remove(
+    "hidden"
+);
+
+document
+.getElementById(
+    "gradingPanel"
+)
+.classList.remove(
+    "hidden"
+);
 
         if (data.error) {
 
@@ -52,12 +84,111 @@ async function scanWebsite() {
             return;
         }
 
-        // RISK SCORE
+        /* =====================
+           SCORE CARDS
+        ===================== */
 
         document.getElementById(
             "riskScore"
         ).innerText =
             data.risk_score;
+
+        document.getElementById(
+            "attackSurface"
+        ).innerText =
+            data.attack_surface;
+
+        document.getElementById(
+            "securityScore"
+        ).innerText =
+            `${data.headers_score}/5`;
+
+        let grade = "F";
+
+        if (data.headers_score === 5)
+            grade = "A+";
+
+        else if (data.headers_score === 4)
+            grade = "A";
+
+        else if (data.headers_score === 3)
+            grade = "B";
+
+        else if (data.headers_score === 2)
+            grade = "C";
+
+        else if (data.headers_score === 1)
+            grade = "D";
+
+        document.getElementById(
+            "securityGrade"
+        ).innerText =
+            grade;
+        document.getElementById(
+    "gradingContent"
+).innerHTML =
+
+`
+<div class="header-item">
+
+    <h3>
+
+        Security Assessment Summary
+
+    </h3>
+
+    <br>
+
+    <strong>Security Grade:</strong>
+
+    ${grade}
+
+    <br><br>
+
+    <strong>Risk Level:</strong>
+
+    ${data.risk_level}
+
+    <br><br>
+
+    <strong>Risk Score:</strong>
+
+    ${data.risk_score}
+
+    <br><br>
+
+    <strong>Security Posture:</strong>
+
+    ${data.security_posture}%
+
+    <br><br>
+
+    <strong>Assessment:</strong>
+
+    <br><br>
+
+    This website was evaluated based on:
+
+    <ul>
+
+        <li>Security Headers</li>
+
+        <li>Open Ports</li>
+
+        <li>Attack Surface</li>
+
+        <li>Detected Vulnerabilities</li>
+
+        <li>Overall Security Posture</li>
+
+    </ul>
+
+</div>
+`;
+
+        /* =====================
+           RISK LEVEL
+        ===================== */
 
         const riskElement =
             document.getElementById(
@@ -69,23 +200,29 @@ async function scanWebsite() {
 
         riskElement.className = "";
 
-        if(data.risk_level === "HIGH"){
+        if (
+            data.risk_level ===
+            "HIGH"
+        ) {
 
             riskElement.classList.add(
                 "high-risk"
             );
 
         }
-        else if(
-            data.risk_level === "MEDIUM"
-        ){
+
+        else if (
+            data.risk_level ===
+            "MEDIUM"
+        ) {
 
             riskElement.classList.add(
                 "medium-risk"
             );
 
         }
-        else{
+
+        else {
 
             riskElement.classList.add(
                 "low-risk"
@@ -93,73 +230,182 @@ async function scanWebsite() {
 
         }
 
-        // ATTACK SURFACE
+        /* =====================
+           EXECUTIVE OVERVIEW
+        ===================== */
 
         document.getElementById(
-            "attackSurface"
+            "highCount"
         ).innerText =
-            data.attack_surface;
-
-        // SECURITY SCORE
+            data.high_count;
 
         document.getElementById(
-            "securityScore"
+            "mediumCount"
         ).innerText =
-            `${data.headers_score}/5`;
-
-        // SECURITY GRADE
-
-        let grade = "F";
-
-        if(data.headers_score === 5)
-            grade = "A+";
-
-        else if(data.headers_score === 4)
-            grade = "A";
-
-        else if(data.headers_score === 3)
-            grade = "B";
-
-        else if(data.headers_score === 2)
-            grade = "C";
-
-        else if(data.headers_score === 1)
-            grade = "D";
+            data.medium_count;
 
         document.getElementById(
-            "securityGrade"
-        ).innerText = grade;
+            "lowCount"
+        ).innerText =
+            data.low_count;
 
-        // AI ASSESSMENT
+        document.getElementById(
+            "securityPosture"
+        ).innerText =
+            data.security_posture +
+            "%";
+
+        /* =====================
+           SCAN INFO
+        ===================== */
+
+        document.getElementById(
+            "scanInfo"
+        ).innerHTML =
+
+        `
+        <div class="info-box">
+
+            <strong>
+            Target URL
+            </strong>
+
+            <br><br>
+
+            ${data.url}
+
+        </div>
+
+        <div class="info-box">
+
+            <strong>
+            Scan Date
+            </strong>
+
+            <br><br>
+
+            ${data.scan_date}
+
+        </div>
+
+        <div class="info-box">
+
+            <strong>
+            Scan Duration
+            </strong>
+
+            <br><br>
+
+            ${data.scan_time}
+
+        </div>
+
+        <div class="info-box">
+
+            <strong>
+            Forms Detected
+            </strong>
+
+            <br><br>
+
+            ${data.forms_count}
+
+        </div>
+        `;
+
+        /* =====================
+           AI ASSESSMENT
+        ===================== */
 
         document.getElementById(
             "aiAssessment"
         ).innerHTML =
 
-        `<div class="ai-card">
-            ${data.ai_assessment}
-        </div>`;
+        `
+        <div class="ai-card">
 
-        // TECHNOLOGIES
+            <h3>
+
+            Executive Summary
+
+            </h3>
+
+            <br>
+
+            <p>
+
+            ${data.ai_assessment}
+
+            </p>
+
+            <br>
+
+            <ul>
+
+                <li>
+                Risk Level:
+                ${data.risk_level}
+                </li>
+
+                <li>
+                Security Posture:
+                ${data.security_posture}%
+                </li>
+
+                <li>
+                Open Ports:
+                ${data.open_ports.length}
+                </li>
+
+                <li>
+                Security Headers:
+                ${data.headers_score}/5
+                </li>
+
+            </ul>
+
+        </div>
+        `;
+
+        /* =====================
+           TECHNOLOGIES
+        ===================== */
 
         let techHtml = "";
 
-        data.technologies.forEach(
-            tech => {
-
-            techHtml +=
-            `<span class="tag">
-                ${tech}
-            </span>`;
-
-        });
-
-        if(
+        if (
             data.technologies.length === 0
-        ){
+        ) {
 
             techHtml =
-            "No technologies detected";
+
+            `
+            <div class="header-item">
+
+                No technologies detected
+
+            </div>
+            `;
+
+        }
+
+        else {
+
+            data.technologies.forEach(
+                tech => {
+
+                techHtml +=
+
+                `
+                <span class="tag">
+
+                    ${tech}
+
+                </span>
+                `;
+
+            });
+
         }
 
         document.getElementById(
@@ -167,26 +413,45 @@ async function scanWebsite() {
         ).innerHTML =
             techHtml;
 
-        // PORTS
+        /* =====================
+           PORTS
+        ===================== */
 
         let portHtml = "";
 
-        data.open_ports.forEach(
-            port => {
-
-            portHtml +=
-            `<span class="tag">
-                ${port}
-            </span>`;
-
-        });
-
-        if(
+        if (
             data.open_ports.length === 0
-        ){
+        ) {
 
             portHtml =
-            "No open ports found";
+
+            `
+            <div class="header-item">
+
+                No open ports detected
+
+            </div>
+            `;
+
+        }
+
+        else {
+
+            data.open_ports.forEach(
+                port => {
+
+                portHtml +=
+
+                `
+                <span class="tag">
+
+                    Port ${port}
+
+                </span>
+                `;
+
+            });
+
         }
 
         document.getElementById(
@@ -194,34 +459,48 @@ async function scanWebsite() {
         ).innerHTML =
             portHtml;
 
-        // HEADERS
+        /* =====================
+           HEADERS
+        ===================== */
 
         let headerHtml = "";
 
-        for(
-            const key
+        for (
+            const header
             in data.headers
-        ){
+        ) {
 
-            headerHtml += `
+            const status =
+                data.headers[
+                    header
+                ];
 
-                <div
-                    class="header-item">
+            headerHtml +=
 
-                    <strong>
-                        ${key}
-                    </strong>
+            `
+            <div class="header-item">
 
-                    ${
-                        data.headers[key]
-                        ?
-                        " ✅ Present"
-                        :
-                        " ❌ Missing"
-                    }
+                <strong>
 
-                </div>
+                ${header}
 
+                </strong>
+
+                <br><br>
+
+                ${
+                    status
+
+                    ?
+
+                    "✅ Present"
+
+                    :
+
+                    "❌ Missing"
+                }
+
+            </div>
             `;
         }
 
@@ -230,42 +509,84 @@ async function scanWebsite() {
         ).innerHTML =
             headerHtml;
 
-        // VULNERABILITIES
+        /* =====================
+           VULNERABILITIES
+        ===================== */
 
         let vulnHtml = "";
 
-        data.vulnerabilities.forEach(
-            vuln => {
+        if (
+            data.vulnerabilities.length === 0
+        ) {
 
-            vulnHtml += `
+            vulnHtml =
 
-                <div
-                    class="vuln-card">
+            `
+            <div class="recommendation">
+
+                No vulnerabilities found
+
+            </div>
+            `;
+
+        }
+
+        else {
+
+            data.vulnerabilities.forEach(
+                vuln => {
+
+                let color =
+                    "#f59e0b";
+
+                if (
+                    vuln.severity ===
+                    "High"
+                ) {
+
+                    color =
+                    "#ef4444";
+                }
+
+                vulnHtml +=
+
+                `
+                <div class="vuln-card">
 
                     <h3>
-                        ${vuln.type}
+
+                    ${vuln.type}
+
                     </h3>
 
-                    <p>
-                        Severity:
-                        ${vuln.severity}
-                    </p>
+                    <br>
+
+                    <span
+                    style="
+                    background:${color};
+                    color:white;
+                    padding:6px 12px;
+                    border-radius:20px;
+                    font-size:12px;
+                    ">
+
+                    ${vuln.severity}
+
+                    </span>
+
+                    <br><br>
 
                     <p>
-                        ${vuln.description}
+
+                    ${vuln.description}
+
                     </p>
 
                 </div>
+                `;
 
-            `;
-        });
+            });
 
-        if(
-            data.vulnerabilities.length === 0
-        ){
-
-            vulnHtml =
-            "No vulnerabilities detected";
         }
 
         document.getElementById(
@@ -273,32 +594,45 @@ async function scanWebsite() {
         ).innerHTML =
             vulnHtml;
 
-        // RECOMMENDATIONS
+        /* =====================
+           RECOMMENDATIONS
+        ===================== */
 
         let recHtml = "";
 
-        data.recommendations.forEach(
-            rec => {
-
-            recHtml += `
-
-                <div
-                    class="recommendation">
-
-                    ${rec}
-
-                </div>
-
-            `;
-
-        });
-
-        if(
+        if (
             data.recommendations.length === 0
-        ){
+        ) {
 
             recHtml =
-            "No recommendations";
+
+            `
+            <div class="header-item">
+
+                No recommendations generated
+
+            </div>
+            `;
+
+        }
+
+        else {
+
+            data.recommendations.forEach(
+                rec => {
+
+                recHtml +=
+
+                `
+                <div class="recommendation">
+
+                    ✔ ${rec}
+
+                </div>
+                `;
+
+            });
+
         }
 
         document.getElementById(
@@ -306,31 +640,68 @@ async function scanWebsite() {
         ).innerHTML =
             recHtml;
 
-        // LOGS
+        /* =====================
+           TERMINAL LOGS
+        ===================== */
 
         document.getElementById(
             "logs"
-        ).innerHTML = `
+        ).innerHTML =
 
-            [+] Target Loaded<br>
-            [+] Security Headers Checked<br>
-            [+] Technology Fingerprinting Completed<br>
-            [+] Port Scanning Completed<br>
-            [+] XSS Testing Completed<br>
-            [+] SQL Injection Testing Completed<br>
-            [+] Attack Surface Calculated<br>
-            [+] AI Assessment Generated<br>
-            [✓] Scan Finished Successfully
-
+        `
+        [+] Target Loaded<br>
+        [+] Security Header Analysis Complete<br>
+        [+] Technology Detection Complete<br>
+        [+] Form Enumeration Complete<br>
+        [+] Open Port Scan Complete<br>
+        [+] SQL Injection Testing Complete<br>
+        [+] XSS Testing Complete<br>
+        [+] Risk Assessment Generated<br>
+        [+] Recommendations Generated<br>
+        [✓] Security Scan Completed Successfully
         `;
 
     }
-    catch(error){
+
+    catch (error) {
 
         loading.classList.add(
             "hidden"
         );
 
-        alert(error);
+        alert(
+            "Scan failed: " +
+            error
+        );
     }
+}
+
+
+function showDashboard(){
+
+    window.scrollTo({
+
+        top:0,
+
+        behavior:"smooth"
+
+    });
+
+}
+
+function scrollToSection(id){
+
+    const section =
+        document.getElementById(id);
+
+    if(section){
+
+        section.scrollIntoView({
+
+            behavior:"smooth"
+
+        });
+
+    }
+
 }
