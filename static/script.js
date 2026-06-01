@@ -1,318 +1,336 @@
-
 async function scanWebsite() {
 
-    const url = document.getElementById('urlInput').value;
+    const url =
+        document.getElementById("urlInput").value;
 
-    const logs = document.getElementById('logs');
+    if (!url) {
 
-    // =========================================
-    // INITIAL LOGS
-    // =========================================
-
-    logs.innerHTML = `
-        <p>[+] Initializing security scan...</p>
-        <p>[+] Connecting to target...</p>
-        <p>[+] Checking security headers...</p>
-        <p>[+] Running vulnerability analysis...</p>
-        <p>[+] Testing SQL Injection payloads...</p>
-        <p>[+] Testing XSS payloads...</p>
-    `;
-
-    // =========================================
-    // SCANNING SCREEN
-    // =========================================
-
-    document.getElementById('results').innerHTML = `
-        <div class="flex flex-col justify-center items-center h-full">
-
-            <div class="radar mb-10"></div>
-
-            <div class="text-red-500 text-4xl scanning neon-red">
-                SCANNING TARGET...
-            </div>
-
-        </div>
-    `;
-
-    // =========================================
-    // FETCH REQUEST
-    // =========================================
-
-    const response = await fetch('/scan', {
-
-        method: 'POST',
-
-        headers: {
-            'Content-Type': 'application/json'
-        },
-
-        body: JSON.stringify({ url })
-
-    });
-
-    const data = await response.json();
-
-    // =========================================
-    // SAVE DATA
-    // =========================================
-
-    window.latestScanData = data;
-
-    // =========================================
-    // ERROR HANDLING
-    // =========================================
-
-    if(data.error){
-
-        document.getElementById('results').innerHTML = `
-            <div class="bg-red-700 p-5 rounded-xl text-white text-xl">
-                ERROR: ${data.error}
-            </div>
-        `;
-
-        logs.innerHTML += `
-            <p>[!] Scan failed</p>
-        `;
+        alert("Please enter a URL");
 
         return;
     }
 
-    // =========================================
-    // UPDATE STATS
-    // =========================================
+    const loading =
+        document.getElementById("loading");
 
-    document.getElementById('threatScore').innerText =
-        data.risk_score;
+    const results =
+        document.getElementById("results");
 
-    document.getElementById('vulnCount').innerText =
-        data.vulnerabilities.length;
+    loading.classList.remove("hidden");
 
-    // =========================================
-    // DYNAMIC PROGRESS BAR
-    // =========================================
+    results.classList.add("hidden");
 
-    const scoreBar = document.getElementById('scoreBar');
+    try {
 
-    scoreBar.style.width =
-        data.risk_score + "%";
+        const response =
+            await fetch("/scan", {
 
-    scoreBar.classList.remove(
-        "bg-green-400",
-        "bg-yellow-400",
-        "bg-red-500"
-    );
+                method: "POST",
 
-    if(data.risk_score >= 70){
+                headers: {
+                    "Content-Type":
+                    "application/json"
+                },
 
-        scoreBar.classList.add("bg-red-500");
+                body: JSON.stringify({
+                    url: url
+                })
 
-    }
-    else if(data.risk_score >= 40){
+            });
 
-        scoreBar.classList.add("bg-yellow-400");
+        const data =
+            await response.json();
 
-    }
-    else{
+        loading.classList.add("hidden");
 
-        scoreBar.classList.add("bg-green-400");
-    }
+        results.classList.remove("hidden");
 
-    // =========================================
-    // LOGS
-    // =========================================
+        if (data.error) {
 
-    logs.innerHTML += `
-        <p>[✓] Scan completed successfully</p>
-        <p>[✓] Threat score generated</p>
-    `;
+            alert(data.error);
 
-    // =========================================
-    // MAIN REPORT
-    // =========================================
-
-    let html = `
-
-        <h2 class="text-5xl font-black neon-red mb-8">
-            Security Scan Report
-        </h2>
-
-        <!-- SUMMARY CARDS -->
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-
-            <!-- TARGET -->
-
-            <div class="glass p-6 rounded-3xl border border-red-500/30 vuln-card">
-
-                <p class="text-gray-400 mb-3">
-                    Target URL
-                </p>
-
-                <h3 class="text-lg font-bold break-all text-white">
-                    ${data.url}
-                </h3>
-
-            </div>
-
-            <!-- RISK LEVEL -->
-
-            <div class="glass p-6 rounded-3xl border border-yellow-500/30 vuln-card">
-
-                <p class="text-gray-400 mb-3">
-                    Risk Level
-                </p>
-
-                <h3 class="text-4xl font-black text-yellow-400">
-                    ${data.risk_level}
-                </h3>
-
-            </div>
-
-            <!-- THREAT SCORE -->
-
-            <div class="glass p-6 rounded-3xl border border-green-500/30 vuln-card">
-
-                <p class="text-gray-400 mb-3">
-                    Threat Score
-                </p>
-
-                <h3 class="text-4xl font-black text-green-400">
-                    ${data.risk_score}/100
-                </h3>
-
-            </div>
-
-        </div>
-
-        <!-- DOWNLOAD BUTTON -->
-
-        <div class="mb-8">
-
-            <button
-                onclick="downloadReport()"
-                class="cyber-btn"
-            >
-                DOWNLOAD PDF REPORT
-            </button>
-
-        </div>
-
-        <!-- RECOMMENDATIONS -->
-
-        <div class="glass border border-green-500/30 rounded-3xl p-6 mb-10">
-
-            <h3 class="text-3xl font-bold text-green-400 mb-5">
-                Security Recommendations
-            </h3>
-
-    `;
-
-    // =========================================
-    // RECOMMENDATIONS LOOP
-    // =========================================
-
-    data.recommendations.forEach(rec => {
-
-        html += `
-            <div class="bg-black/40 border border-green-500/30 p-5 rounded-2xl mb-4 vuln-card">
-                ${rec}
-            </div>
-        `;
-    });
-
-    html += `</div>`;
-
-    // =========================================
-    // VULNERABILITIES TITLE
-    // =========================================
-
-    html += `
-
-        <h3 class="text-4xl font-black neon-red mb-8">
-            Detected Vulnerabilities
-        </h3>
-
-    `;
-
-    // =========================================
-    // VULNERABILITY LOOP
-    // =========================================
-
-    data.vulnerabilities.forEach(vuln => {
-
-        let color = "green";
-
-        if(vuln.severity === "High" || vuln.severity === "HIGH"){
-            color = "red";
-        }
-        else if(vuln.severity === "Medium" || vuln.severity === "MEDIUM"){
-            color = "yellow";
+            return;
         }
 
-        logs.innerHTML += `
-            <p>[!] ${vuln.type} detected</p>
-        `;
+        // RISK SCORE
 
-        html += `
+        document.getElementById(
+            "riskScore"
+        ).innerText =
+            data.risk_score;
 
-            <div class="vuln-card glass border border-${color}-500/30 rounded-3xl p-6 mb-6">
+        const riskElement =
+            document.getElementById(
+                "riskLevel"
+            );
 
-                <div class="flex justify-between items-center mb-4">
+        riskElement.innerText =
+            data.risk_level;
 
-                    <h4 class="text-3xl font-bold text-${color}-400">
-                        ${vuln.type}
-                    </h4>
+        riskElement.className = "";
 
-                    <span class="px-5 py-2 rounded-full bg-${color}-500 text-white font-bold">
-                        ${vuln.severity}
-                    </span>
+        if(data.risk_level === "HIGH"){
+
+            riskElement.classList.add(
+                "high-risk"
+            );
+
+        }
+        else if(
+            data.risk_level === "MEDIUM"
+        ){
+
+            riskElement.classList.add(
+                "medium-risk"
+            );
+
+        }
+        else{
+
+            riskElement.classList.add(
+                "low-risk"
+            );
+
+        }
+
+        // ATTACK SURFACE
+
+        document.getElementById(
+            "attackSurface"
+        ).innerText =
+            data.attack_surface;
+
+        // SECURITY SCORE
+
+        document.getElementById(
+            "securityScore"
+        ).innerText =
+            `${data.headers_score}/5`;
+
+        // SECURITY GRADE
+
+        let grade = "F";
+
+        if(data.headers_score === 5)
+            grade = "A+";
+
+        else if(data.headers_score === 4)
+            grade = "A";
+
+        else if(data.headers_score === 3)
+            grade = "B";
+
+        else if(data.headers_score === 2)
+            grade = "C";
+
+        else if(data.headers_score === 1)
+            grade = "D";
+
+        document.getElementById(
+            "securityGrade"
+        ).innerText = grade;
+
+        // AI ASSESSMENT
+
+        document.getElementById(
+            "aiAssessment"
+        ).innerHTML =
+
+        `<div class="ai-card">
+            ${data.ai_assessment}
+        </div>`;
+
+        // TECHNOLOGIES
+
+        let techHtml = "";
+
+        data.technologies.forEach(
+            tech => {
+
+            techHtml +=
+            `<span class="tag">
+                ${tech}
+            </span>`;
+
+        });
+
+        if(
+            data.technologies.length === 0
+        ){
+
+            techHtml =
+            "No technologies detected";
+        }
+
+        document.getElementById(
+            "technologySection"
+        ).innerHTML =
+            techHtml;
+
+        // PORTS
+
+        let portHtml = "";
+
+        data.open_ports.forEach(
+            port => {
+
+            portHtml +=
+            `<span class="tag">
+                ${port}
+            </span>`;
+
+        });
+
+        if(
+            data.open_ports.length === 0
+        ){
+
+            portHtml =
+            "No open ports found";
+        }
+
+        document.getElementById(
+            "portsSection"
+        ).innerHTML =
+            portHtml;
+
+        // HEADERS
+
+        let headerHtml = "";
+
+        for(
+            const key
+            in data.headers
+        ){
+
+            headerHtml += `
+
+                <div
+                    class="header-item">
+
+                    <strong>
+                        ${key}
+                    </strong>
+
+                    ${
+                        data.headers[key]
+                        ?
+                        " ✅ Present"
+                        :
+                        " ❌ Missing"
+                    }
 
                 </div>
 
-                <p class="text-gray-300 text-lg">
-                    ${vuln.description}
-                </p>
+            `;
+        }
 
-            </div>
+        document.getElementById(
+            "headersSection"
+        ).innerHTML =
+            headerHtml;
+
+        // VULNERABILITIES
+
+        let vulnHtml = "";
+
+        data.vulnerabilities.forEach(
+            vuln => {
+
+            vulnHtml += `
+
+                <div
+                    class="vuln-card">
+
+                    <h3>
+                        ${vuln.type}
+                    </h3>
+
+                    <p>
+                        Severity:
+                        ${vuln.severity}
+                    </p>
+
+                    <p>
+                        ${vuln.description}
+                    </p>
+
+                </div>
+
+            `;
+        });
+
+        if(
+            data.vulnerabilities.length === 0
+        ){
+
+            vulnHtml =
+            "No vulnerabilities detected";
+        }
+
+        document.getElementById(
+            "vulnerabilitySection"
+        ).innerHTML =
+            vulnHtml;
+
+        // RECOMMENDATIONS
+
+        let recHtml = "";
+
+        data.recommendations.forEach(
+            rec => {
+
+            recHtml += `
+
+                <div
+                    class="recommendation">
+
+                    ${rec}
+
+                </div>
+
+            `;
+
+        });
+
+        if(
+            data.recommendations.length === 0
+        ){
+
+            recHtml =
+            "No recommendations";
+        }
+
+        document.getElementById(
+            "recommendationSection"
+        ).innerHTML =
+            recHtml;
+
+        // LOGS
+
+        document.getElementById(
+            "logs"
+        ).innerHTML = `
+
+            [+] Target Loaded<br>
+            [+] Security Headers Checked<br>
+            [+] Technology Fingerprinting Completed<br>
+            [+] Port Scanning Completed<br>
+            [+] XSS Testing Completed<br>
+            [+] SQL Injection Testing Completed<br>
+            [+] Attack Surface Calculated<br>
+            [+] AI Assessment Generated<br>
+            [✓] Scan Finished Successfully
 
         `;
-    });
 
-    // =========================================
-    // FINAL OUTPUT
-    // =========================================
+    }
+    catch(error){
 
-    document.getElementById('results').innerHTML = html;
+        loading.classList.add(
+            "hidden"
+        );
+
+        alert(error);
+    }
 }
-
-// =========================================
-// PDF DOWNLOAD
-// =========================================
-
-async function downloadReport(){
-
-    const response = await fetch('/generate_report', {
-
-        method: 'POST',
-
-        headers: {
-            'Content-Type': 'application/json'
-        },
-
-        body: JSON.stringify(window.latestScanData)
-
-    });
-
-    const blob = await response.blob();
-
-    const url = window.URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-
-    a.href = url;
-
-    a.download = 'security_report.pdf';
-
-    a.click();
-}
-

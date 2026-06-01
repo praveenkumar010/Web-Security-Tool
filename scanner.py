@@ -1,172 +1,447 @@
 import requests
+import socket
 from bs4 import BeautifulSoup
+from urllib.parse import urlparse
 
-def scan_website(url):
+# ----------------------------------
+# SECURITY HEADERS
+# ----------------------------------
 
-    if not url.startswith("http://") and not url.startswith("https://"):
-        url = "https://" + url
+SECURITY_HEADERS = [
+    "Content-Security-Policy",
+    "Strict-Transport-Security",
+    "X-Frame-Options",
+    "X-Content-Type-Options",
+    "Referrer-Policy"
+]
 
-    vulnerabilities = []
-    recommendations = []
+# ----------------------------------
+# COMMON PORTS
+# ----------------------------------
 
-    risk_score = 0
+COMMON_PORTS = [
+    21,
+    22,
+    25,
+    53,
+    80,
+    110,
+    143,
+    443,
+    3306,
+    8080
+]
+
+# ----------------------------------
+# HEADER CHECK
+# ----------------------------------
+
+def check_security_headers(headers):
+
+    results = {}
+
+    for header in SECURITY_HEADERS:
+        results[header] = header in headers
+
+    return results
+
+# ----------------------------------
+# PORT SCAN
+# ----------------------------------
+
+def scan_ports(domain):
+
+    open_ports = []
+
+    for port in COMMON_PORTS:
+
+        try:
+
+            sock = socket.socket(
+                socket.AF_INET,
+                socket.SOCK_STREAM
+            )
+
+            sock.settimeout(1)
+
+            result = sock.connect_ex(
+                (domain, port)
+            )
+
+            if result == 0:
+                open_ports.append(port)
+
+            sock.close()
+
+        except:
+            pass
+
+    return open_ports
+
+# ----------------------------------
+# TECHNOLOGY DETECTION
+# ----------------------------------
+
+def detect_technologies(headers, html):
+
+    technologies = []
+
+    server = headers.get("Server", "")
+
+    if "Apache" in server:
+        technologies.append("Apache")
+
+    if "nginx" in server.lower():
+        technologies.append("Nginx")
+
+    if "cloudflare" in server.lower():
+        technologies.append("Cloudflare")
+
+    html_lower = html.lower()
+
+    if "bootstrap" in html_lower:
+        technologies.append("Bootstrap")
+
+    if "jquery" in html_lower:
+        technologies.append("jQuery")
+
+    if "wp-content" in html_lower:
+        technologies.append("WordPress")
+
+    return list(set(technologies))
+
+# ----------------------------------
+# FORM DETECTION
+# ----------------------------------
+
+def detect_forms(soup):
+
+    forms = soup.find_all("form")
+
+    return len(forms)
+
+# ----------------------------------
+# SQLI TEST
+# ----------------------------------
+
+def test_sqli(url):
 
     try:
 
-        response = requests.get(url, timeout=5)
+        payload = "' OR 1=1 --"
 
-        headers = response.headers
-        html = response.text
+        response = requests.get(
+            url + "?id=" + payload,
+            timeout=5
+        )
 
-        soup = BeautifulSoup(html, 'html.parser')
+        errors = [
 
-        # HTTPS CHECK
-
-        if not url.startswith("https"):
-
-            vulnerabilities.append({
-                "type": "Insecure Connection",
-                "severity": "Medium",
-                "description": "Website is not using HTTPS."
-            })
-
-            recommendations.append(
-                "Enable HTTPS using SSL/TLS."
-            )
-
-            risk_score += 20
-
-        # CSP HEADER
-
-        if "Content-Security-Policy" not in headers:
-
-            vulnerabilities.append({
-                "type": "Missing CSP Header",
-                "severity": "High",
-                "description": "Content-Security-Policy missing."
-            })
-
-            recommendations.append(
-                "Add Content-Security-Policy header."
-            )
-
-            risk_score += 25
-
-        # X-FRAME
-
-        if "X-Frame-Options" not in headers:
-
-            vulnerabilities.append({
-                "type": "Missing X-Frame-Options",
-                "severity": "Medium",
-                "description": "Clickjacking protection missing."
-            })
-
-            recommendations.append(
-                "Add X-Frame-Options header."
-            )
-
-            risk_score += 15
-
-        # FORMS
-
-        forms = soup.find_all('form')
-
-        if len(forms) > 0:
-
-            vulnerabilities.append({
-                "type": "Forms Detected",
-                "severity": "Info",
-                "description": f"{len(forms)} forms found."
-            })
-
-        # SCRIPT CHECK
-
-        scripts = soup.find_all('script')
-
-        if len(scripts) > 10:
-
-            vulnerabilities.append({
-                "type": "High Script Usage",
-                "severity": "Low",
-                "description": "Many scripts detected."
-            })
-
-            risk_score += 10
-
-        # SQLi TEST
-
-        sql_payload = "' OR 1=1 --"
-
-        sql_test_url = url + "?id=" + sql_payload
-
-        sql_response = requests.get(sql_test_url)
-
-        sql_errors = [
             "sql syntax",
             "mysql",
+            "database error",
             "syntax error",
-            "database error"
+            "unclosed quotation mark"
+
         ]
 
-        for error in sql_errors:
+        for error in errors:
 
-            if error.lower() in sql_response.text.lower():
+            if error in response.text.lower():
+                return True
+
+        return False
+
+    except:
+        return False
+
+# ----------------------------------
+# XSS TEST
+# ----------------------------------
+
+def test_xss(url):
+
+    try:
+
+        payload = "<script>alert('xss')</script>"
+
+        response = requests.get(
+            url + "?q=" + payload,
+            timeout=5
+        )
+
+        return payload.lower() in response.text.lower()
+
+    except:
+        return False
+
+# ----------------------------------
+# AI SECURITY ASSESSMENT
+# ----------------------------------
+
+def generate_ai_assessment(
+
+        risk_score,
+        headers_score,
+        forms_count,
+        open_ports
+
+):
+
+    if risk_score >= 70:
+
+        return (
+            "High risk target. Multiple security "
+            "misconfigurations detected. Immediate "
+            "remediation is recommended."
+        )
+
+    elif risk_score >= 40:
+
+        return (
+            "Medium risk target. Security posture "
+            "can be improved by implementing missing "
+            "security controls and hardening services."
+        )
+
+    else:
+
+        return (
+            "Low risk target. Basic security controls "
+            "appear to be in place. Continue periodic "
+            "security monitoring."
+        )
+
+# ----------------------------------
+# MAIN SCANNER
+# ----------------------------------
+
+def scan_website(url):
+
+    if not url.startswith("http"):
+        url = "https://" + url
+
+    try:
+
+        response = requests.get(
+            url,
+            timeout=10,
+            headers={
+                "User-Agent":
+                "WebAppSecurityTool"
+            }
+        )
+
+        html = response.text
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
+
+        domain = urlparse(url).netloc
+
+        # -----------------------
+        # HEADER ANALYSIS
+        # -----------------------
+
+        headers_result = check_security_headers(
+            response.headers
+        )
+
+        headers_score = sum(
+            headers_result.values()
+        )
+
+        # -----------------------
+        # FORM ANALYSIS
+        # -----------------------
+
+        forms_count = detect_forms(soup)
+
+        # -----------------------
+        # TECHNOLOGY ANALYSIS
+        # -----------------------
+
+        technologies = detect_technologies(
+            response.headers,
+            html
+        )
+
+        # -----------------------
+        # PORT SCAN
+        # -----------------------
+
+        open_ports = scan_ports(domain)
+
+        # -----------------------
+        # VULNERABILITIES
+        # -----------------------
+
+        vulnerabilities = []
+
+        recommendations = []
+
+        risk_score = 0
+
+        for header, present in headers_result.items():
+
+            if not present:
 
                 vulnerabilities.append({
-                    "type": "Possible SQL Injection",
-                    "severity": "High",
-                    "description": "SQL error patterns detected."
+
+                    "type":
+                    f"Missing {header}",
+
+                    "severity":
+                    "Medium",
+
+                    "description":
+                    f"{header} is not configured."
+
                 })
 
-                recommendations.append(
-                    "Use parameterized queries."
-                )
+                risk_score += 10
 
-                risk_score += 30
+        # SQLi
 
-                break
-
-        # XSS TEST
-
-        xss_payload = "<script>alert('xss')</script>"
-
-        xss_url = url + "?q=" + xss_payload
-
-        xss_response = requests.get(xss_url)
-
-        if xss_payload.lower() in xss_response.text.lower():
+        if test_sqli(url):
 
             vulnerabilities.append({
-                "type": "Possible XSS",
-                "severity": "High",
-                "description": "Reflected XSS payload detected."
+
+                "type":
+                "Possible SQL Injection",
+
+                "severity":
+                "High",
+
+                "description":
+                "Potential SQLi behaviour detected."
+
             })
 
             recommendations.append(
-                "Sanitize and escape user input."
+                "Use parameterized queries."
             )
 
             risk_score += 30
 
-        # FINAL RISK
+        # XSS
+
+        if test_xss(url):
+
+            vulnerabilities.append({
+
+                "type":
+                "Possible XSS",
+
+                "severity":
+                "High",
+
+                "description":
+                "Reflected XSS payload detected."
+
+            })
+
+            recommendations.append(
+                "Sanitize user inputs."
+            )
+
+            risk_score += 30
+
+        # FORMS
+
+        if forms_count > 0:
+
+            risk_score += 5
+
+        # PORTS
+
+        if len(open_ports) > 5:
+
+            risk_score += 15
+
+        # -----------------------
+        # RISK LEVEL
+        # -----------------------
 
         if risk_score >= 70:
+
             risk_level = "HIGH"
 
         elif risk_score >= 40:
+
             risk_level = "MEDIUM"
 
         else:
+
             risk_level = "LOW"
+
+        # -----------------------
+        # ATTACK SURFACE SCORE
+        # -----------------------
+
+        attack_surface = min(
+
+            100,
+
+            (
+                forms_count * 5 +
+                len(open_ports) * 5 +
+                (5 - headers_score) * 10
+            )
+
+        )
+
+        # -----------------------
+        # AI SUMMARY
+        # -----------------------
+
+        ai_assessment = generate_ai_assessment(
+
+            risk_score,
+            headers_score,
+            forms_count,
+            open_ports
+
+        )
 
         return {
 
             "url": url,
-            "risk_score": risk_score,
-            "risk_level": risk_level,
-            "vulnerabilities": vulnerabilities,
-            "recommendations": recommendations
+
+            "risk_score":
+            risk_score,
+
+            "risk_level":
+            risk_level,
+
+            "headers":
+            headers_result,
+
+            "headers_score":
+            headers_score,
+
+            "forms_count":
+            forms_count,
+
+            "technologies":
+            technologies,
+
+            "open_ports":
+            open_ports,
+
+            "attack_surface":
+            attack_surface,
+
+            "ai_assessment":
+            ai_assessment,
+
+            "vulnerabilities":
+            vulnerabilities,
+
+            "recommendations":
+            recommendations
 
         }
 

@@ -1,8 +1,5 @@
-
-Flask
-Flask-SQLAlchemy
-Flask-Login
-requests
-beautifulsoup4
-reportlab
-
+Flask==3.0.3
+requests==2.32.3
+beautifulsoup4==4.12.3
+python-whois==0.9.4
+cryptography==43.0.1
